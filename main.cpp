@@ -45,8 +45,17 @@ class Solution {
         }
 };
 
-void newGen(Solution pop[POP_SIZE]){
-    
+void newGen(Solution pop[POP_SIZE], int settings){
+    //switch(settings){
+    //    case 0:
+    //    case 1:
+    //    default:
+    //
+    //}
+}
+
+Solution mutate(Solution s, int p){
+    return s;
 }
 
 void GA(){
@@ -62,7 +71,7 @@ void GA(){
     // this line will be commented for a while
     
     // create next generation
-    newGen(pop); 
+    newGen(pop, 0); 
 
 
 }
