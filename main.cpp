@@ -53,7 +53,6 @@ class Solution {
             return sum;
         }
         void makeValid(){ // if solution is not valid, make it so
-            srand(time(NULL));
             while (this->cargo() > MAX_CARGO){
                 int r = rand() % (NUM_OBJS); // random from 0 to 5
                 if(this->val[r]) this->val[r] = false;
@@ -65,7 +64,6 @@ class Solution {
 };
 
 Solution mutate(Solution s, int p){
-    srand(time(NULL));
     for(int i = 0; i < NUM_OBJS; i++){
         int r = (rand() % 101) + 1;
         if(p > r) s.val[i] = s.val ? false : true;
@@ -74,7 +72,6 @@ Solution mutate(Solution s, int p){
 }
 
 std::tuple<Solution, Solution> crossover(Solution s1, Solution s2) {
-    srand(time(NULL));
     Solution r1 = s1;
     Solution r2 = s2;
 
@@ -83,6 +80,11 @@ std::tuple<Solution, Solution> crossover(Solution s1, Solution s2) {
         r1.val[i] = (i < cross_point)? s1.val[i] : s2.val[i];
         r2.val[i] = (i < cross_point)? s2.val[i] : s1.val[i];
     }
+    
+    //cout << "cp: " << cross_point << " \n";
+    //cout << "s1: " << s1.show() << " \n";
+    //cout << "s2: " << s2.show() << " \n";
+    //cout << "r1: " << r1.show() << " \n";
 
     return {r1, r2};    
 }
@@ -99,61 +101,67 @@ bool checkConvergence (Solution pop[POP_SIZE], float f){
             if (get<0>(tup) == fit){
                 get<1>(tup) += 1;
                 found = true;
-                std::cout << "Parada é: " << parcel << " current count: " << std::get<1>(tup) << "\n";
                 if(get<1>(tup) >= parcel) return true;
             }
         }
         if(!found){
             std::tuple<int, int> t = {fit, 1};
             dict_list.push_back(t);
-            
-            std::cout << "Did not find fitness: " << std::get<0>(t) << " current count: " << std::get<1>(t) << "\n";
         }
     }
     return false;
 }
 
-void newGen(Solution pop[POP_SIZE], int selected[2]){
-    
-}
-
-void rouletteSelection (Solution pop[POP_SIZE]) {
-    int selected[2] = {-1,-1};
+int rouletteSelection (Solution pop[POP_SIZE]) {
     int total_fitness = 0;
-    
     for(int i = 0; i < POP_SIZE; i++)total_fitness += pop[i].fitness();
 
-    srand(time(NULL));
-    int r = rand() % POP_SIZE;
+    int r = rand() % POP_SIZE, fr = r;
 
     int sum = 0;
     while (sum < total_fitness){
         if(r >= POP_SIZE)r=0;
         sum += pop[r].fitness();
-        
-        //cout << "r = " << r << " | sum = " << sum << " | total_fitness = " << total_fitness << "\n"; 
-        if(sum >= total_fitness){
-
-            if(selected[0] < 0){
-                selected[0] = r;
-                sum = 0;
-                //srand(time(NULL));
-                r = rand() % POP_SIZE;
-            }
-            if(selected[1] < 0 && r != selected[0]){
-                selected[1] = r;
-                break;
-            }
-            else {
-                //srand(time(NULL));
-                r = rand() % POP_SIZE;
-            }
-        }
         r++;
+        if(r == fr && sum != 0)break;
+    }
+    return r;
+}
+
+void newGen(Solution pop[POP_SIZE]){
+    
+    std::list<Solution> parents;
+    std::list<Solution> descendants;
+
+    int s1 = rouletteSelection(pop);
+    int s2 = rouletteSelection(pop);
+    
+    parents.push_back(pop[s1]);
+    parents.push_back(pop[s2]);
+
+    std::list<Solution>::iterator it = parents.begin();
+    for(it = parents.begin(); it != parents.end(); it++){
+        Solution p1 = *it;
+        Solution p2 = *(++it);
+
+        Solution c1, c2;
+        std::tuple<Solution, Solution> t = crossover(p1, p2);
+        c1 = std::get<0>(t); c2 = std::get<1>(t);
+
+        descendants.push_back(c1);
+        descendants.push_back(c2);
+
+        //std::cout << "p1: " << p1.show() << " p2: " << p2.show() << "\n";
+        //std::cout << "c1: " << c1.show() << " c2: " << c2.show() << "\n";
     }
 
-    newGen(pop, selected);
-    //std::cout << "Selected randomly: " << selected[0] << " and " << selected[1] << "\n";
+    int i = POP_SIZE - 1;
+    for(it = descendants.begin(); it != descendants.end(); it++){
+        pop[i] = *it;
+        i--;
+    }
+
+    
 }
 
 void GA(){
@@ -161,15 +169,17 @@ void GA(){
     // no need :)
 
     // create random solutions
-    srand(time(NULL));
     Solution pop[POP_SIZE]; 
     for(int i = 0; i < POP_SIZE; i++)pop[i] = Solution(); 
+
+    int n = sizeof(pop)/sizeof(pop[0]);
+    sort(pop, pop +n);
 
     // check for convergence
     // if(checkConvergence(pop, 0.9))return; // this line will be commented for a while
     
     // create next generation
-    rouletteSelection(pop);
+    newGen(pop);
 }
 
 int main() {
@@ -178,9 +188,12 @@ int main() {
     Solution pop[POP_SIZE]; for(int i = 0; i < POP_SIZE; i++)pop[i] = Solution();
     std::cout << "Show: " << pop[0].show() << " fit: " << pop[0].fitness() << " car: " << pop[0].cargo() << "\n";
 
+    newGen(pop);
 
-    rouletteSelection(pop);
-    std::cout << "Hi";
+    std::list<Solution> lpop; 
+    lpop.insert(lpop.begin(), std::begin(pop), std::end(pop));
+    std::list<Solution>::iterator it = lpop.begin();
+    std::cout << "Show: " << it->show() << " fit: " << it->fitness() << " car: " << it->cargo() << "\n";
 
     return 0;
 }
