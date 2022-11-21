@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <list>
 #include <string>
 #include <tuple>
@@ -8,8 +9,8 @@ using namespace std;
 
 const int MAX_GENERATIONS = 100;
 const int NUM_OBJS = 12;
-const int POP_SIZE = 50;
-const int MAX_CARGO = 10;
+const int POP_SIZE = 100;
+const int MAX_CARGO = 50;
 
 class ValCar {
     public:
@@ -25,10 +26,17 @@ class ValCar {
         }
 };
 
-const ValCar OBJ_ATR[NUM_OBJS] = {
-    ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar()
+ValCar OBJ_ATR[NUM_OBJS] = {
+    ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), 
+    ValCar(), ValCar(), ValCar(), ValCar(), ValCar(), ValCar()
 };
 
+void readKnapsackInstance(){
+    ofstream myfile;
+    myfile.open ("example.txt");
+    myfile << "Writing this to a file.\n";
+    myfile.close();
+}
 class Solution {
     public:
         int val[NUM_OBJS];
@@ -77,10 +85,10 @@ class Solution {
 Solution mutate(Solution s, int p){
     for(int i = 0; i < NUM_OBJS; i++){
         int r = (rand() % 101) + 1;
-        if(p > r) s.val[i] = s.val ? false : true;
+        if(r <= p) s.val[i] = s.val ? false : true;
     }
     s.validate();
-    std::cout << "Inside mutation: " << s.show() << "\n";
+    //std::cout << "Inside mutation: " << s.show() << "\n";
     return s;
 }
 
@@ -94,11 +102,11 @@ std::tuple<Solution, Solution> crossover(Solution s1, Solution s2) {
         r2.val[i] = (i < cross_point)? s2.val[i] : s1.val[i];
     }
     
-    std::cout << "Inside crossover, cp: " << cross_point << " \n";
-    std::cout << "s1: " << s1.show() << " \n";
-    std::cout << "s2: " << s2.show() << " \n";
-    std::cout << "r1: " << r1.show() << " \n";
-    std::cout << "r2: " << r2.show() << " \n";
+    //std::cout << "Inside crossover, cp: " << cross_point << " \n";
+    //std::cout << "s1: " << s1.show() << " \n";
+    //std::cout << "s2: " << s2.show() << " \n";
+    //std::cout << "r1: " << r1.show() << " \n";
+    //std::cout << "r2: " << r2.show() << " \n";
 
     return {r1, r2};    
 }
@@ -161,7 +169,45 @@ int groupSelection4 (Solution pop[POP_SIZE]){
         rl = 0;
     } 
     
-    std::cout << rl*POP_SIZE/4 + r << "\n";
+    //std::cout << rl*POP_SIZE/4 + r << "\n";
+    return rl*POP_SIZE/4 + r;
+}
+
+int groupSelection4h (Solution pop[POP_SIZE]){
+    int rl = rand() % 101; // from 0 to 3
+    int r = rand() % POP_SIZE/4; // from 0 to 11   
+
+    if(rl <= 50){ //rl = 3 50%
+        rl = 3;
+        r = rand() % (POP_SIZE - 3*POP_SIZE/4); // from 0 to 12
+    }
+    else if(rl <= 50+30 ){ //rl = 2 30% 
+        rl = 2;
+    }
+    else{ //rl = 1 20%
+        rl = 1;
+    }
+    
+    //std::cout << rl*POP_SIZE/4 + r << "\n";
+    return rl*POP_SIZE/4 + r;
+}
+
+int groupSelection4m (Solution pop[POP_SIZE]){
+    int rl = rand() % 101; // from 0 to 3
+    int r = rand() % POP_SIZE/4; // from 0 to 11   
+
+    if(rl <= 45){ //rl = 3 45%
+        rl = 3;
+        r = rand() % (POP_SIZE - 3*POP_SIZE/4); // from 0 to 12
+    }
+    else if(rl <= 45+35 ){ //rl = 2 35% 
+        rl = 2;
+    }
+    else{ //rl = 1 20%
+        rl = 1;
+    }
+    
+    //std::cout << rl*POP_SIZE/4 + r << "\n";
     return rl*POP_SIZE/4 + r;
 }
 
@@ -172,12 +218,13 @@ void newGen(Solution pop[POP_SIZE]){
 
     int s1 = rouletteSelection(pop);
     int s2 = rouletteSelection(pop);
+
     //int s1 = groupSelection4(pop);
     //int s2 = groupSelection4(pop);
 
-    std::cout << "Inside newGen: \n";
-    std::cout << "s1: " << pop[s1].show() << " \n";
-    std::cout << "s2: " << pop[s2].show() << " \n";
+    //std::cout << "Inside newGen: \n";
+    //std::cout << "s1: " << pop[s1].show() << " \n";
+    //std::cout << "s2: " << pop[s2].show() << " \n";
     
     parents.push_back(pop[s1]);
     parents.push_back(pop[s2]);
@@ -190,7 +237,9 @@ void newGen(Solution pop[POP_SIZE]){
         Solution c1, c2;
         std::tuple<Solution, Solution> t = crossover(p1, p2);
         c1 = std::get<0>(t); c2 = std::get<1>(t);
-        mutate(c1, 50); mutate(c2, 50); 
+        
+        c1 = mutate(c1, 10); 
+        c2 = mutate(c2, 10); 
 
         descendants.push_back(c1);
         descendants.push_back(c2);
@@ -199,9 +248,9 @@ void newGen(Solution pop[POP_SIZE]){
 
     // assumes sorted list
     int i = 0;
-    std::cout << "Inside newGen, these are the new descendants: \n";
+    //std::cout << "Inside newGen, these are the new descendants: \n";
     for(it = descendants.begin(); it != descendants.end(); it++){
-        std::cout << it->show() << "\n"; 
+        //std::cout << it->show() << "\n"; 
         pop[i] = *it;
         i++;
     }
@@ -220,11 +269,11 @@ void GA(){
         int n = sizeof(pop)/sizeof(pop[0]);
         sort(pop, pop +n);
 
-        std::cout << "Generation " << i << ":\n";
-        for(int i = 0; i < POP_SIZE; i++)std::cout << pop[i].show() << " \n";
+        //std::cout << "Generation " << i << ":\n";
+        for(int i = 0; i < POP_SIZE; i++)//std::cout << pop[i].show() << " \n";
         // check for convergence
         if(checkConvergence(pop, 0.9)){
-            std::cout << "Converged \n";
+            //std::cout << "Converged \n";
             break;
         }
         
@@ -233,11 +282,16 @@ void GA(){
 
     }
 
-    std::cout << "Last Generation: \n";
-    for(int i = 0; i < POP_SIZE; i++)std::cout << pop[i].show() << " \n";
+    //std::cout << "Last Generation: \n";
+    //for(int i = 0; i < POP_SIZE; i++)std::cout << pop[i].show() << " \n";
+
+    std::cout << "Best fit: " << pop[POP_SIZE-1].show() << "\n";
 }
 
 int main() {
+    
+    for(int i = 0; i < NUM_OBJS; i++)cout << "Object: " << OBJ_ATR[i].valor << ", " << OBJ_ATR[i].carga << "\n";
+    
     srand(time(NULL));
 
     Solution pop[POP_SIZE]; for(int i = 0; i < POP_SIZE; i++)pop[i] = Solution();
@@ -245,9 +299,7 @@ int main() {
     int n = sizeof(pop)/sizeof(pop[0]);
     sort(pop, pop +n);
 
-    //GA();
-
-    while(true)groupSelection4(pop);
+    GA();
 
     return 0;
 }
